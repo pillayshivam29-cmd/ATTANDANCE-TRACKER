@@ -9,54 +9,82 @@ import {
   Sparkles,
   ChevronRight,
   ShieldCheck,
+  LogOut,
+  GraduationCap,
+  School,
 } from 'lucide-react';
 import { useAttendance, NavigationTab } from '../../context/AttendanceContext';
+import { UserSession } from '../auth/RoleLogin';
 
 interface SidebarProps {
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
+  userSession?: UserSession;
+  onLogout?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) => {
-  const { activeTab, setActiveTab, people, attendanceRecords, currentDate } = useAttendance();
+export const Sidebar: React.FC<SidebarProps> = ({
+  mobileOpen,
+  setMobileOpen,
+  userSession,
+  onLogout,
+}) => {
+  const { activeTab, setActiveTab, people, attendanceRecords, currentDate, settings } = useAttendance();
 
   const todayRecords = attendanceRecords.filter((r) => r.date === currentDate);
   const presentCount = todayRecords.filter((r) => r.status === 'present').length;
 
-  const navItems: { id: NavigationTab; label: string; icon: React.ReactNode; badge?: string }[] = [
+  const role = userSession?.role || 'admin';
+
+  // Role-based navigation items
+  const allNavItems: {
+    id: NavigationTab;
+    label: string;
+    icon: React.ReactNode;
+    badge?: string;
+    allowedRoles: string[];
+  }[] = [
     {
       id: 'dashboard',
-      label: 'Dashboard',
+      label: role === 'student' ? 'My Overview' : role === 'parent' ? "Child's Overview" : 'Dashboard',
       icon: <LayoutDashboard size={18} />,
+      allowedRoles: ['admin', 'teacher', 'student', 'parent'],
     },
     {
       id: 'attendance',
-      label: 'Attendance',
+      label: role === 'student' ? 'My Checkpoints' : role === 'parent' ? 'Daily Attendance' : 'Attendance',
       icon: <CheckSquare size={18} />,
-      badge: `${presentCount}/${people.length}`,
+      badge: role === 'admin' || role === 'teacher' ? `${presentCount}/${people.length}` : undefined,
+      allowedRoles: ['admin', 'teacher', 'student', 'parent'],
     },
     {
       id: 'calendar',
-      label: 'Calendar',
+      label: 'Monthly Calendar',
       icon: <CalendarDays size={18} />,
+      allowedRoles: ['admin', 'teacher', 'student', 'parent'],
     },
     {
       id: 'people',
-      label: 'Students / Staff',
+      label: 'Students & Staff',
       icon: <Users size={18} />,
       badge: `${people.length}`,
+      allowedRoles: ['admin', 'teacher'],
     },
     {
       id: 'reports',
-      label: 'Reports',
+      label: 'Reports & Analytics',
       icon: <BarChart3 size={18} />,
+      allowedRoles: ['admin', 'teacher'],
     },
     {
       id: 'settings',
-      label: 'Settings',
+      label: 'Institution Settings',
       icon: <Settings size={18} />,
+      allowedRoles: ['admin'],
     },
   ];
+
+  const visibleNavItems = allNavItems.filter((item) => item.allowedRoles.includes(role));
 
   return (
     <>
@@ -84,24 +112,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
               </div>
               <div className="flex flex-col">
                 <span className="font-semibold text-zinc-950 text-base tracking-tight leading-none">
-                  Attendly
+                  {settings.orgName.split(' ')[0] || 'Attendly'}
                 </span>
-                <span className="text-[11px] font-medium text-zinc-600 tracking-wide mt-0.5">
-                  SYSTEMS ENTERPRISE
+                <span className="text-[10px] font-semibold text-zinc-500 tracking-wide uppercase mt-0.5">
+                  {role} Portal
                 </span>
               </div>
             </div>
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-zinc-100 text-zinc-600 border border-zinc-200">
-              PRO
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200 uppercase">
+              {role}
             </span>
           </div>
 
           {/* Navigation Items */}
           <div className="p-3 space-y-1 overflow-y-auto flex-1">
-            <div className="px-3 py-1.5 text-[11px] font-semibold text-zinc-600 uppercase tracking-wider">
-              Workspace
+            <div className="px-3 py-1.5 text-[11px] font-semibold text-zinc-400 uppercase tracking-wider font-mono">
+              Portal Navigation
             </div>
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
                 <button
@@ -142,47 +170,49 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, setMobileOpen }) =
             })}
           </div>
 
-          {/* Quick Info Box */}
+          {/* User Profile section */}
           <div className="p-3 mx-3 mb-2 rounded-xl bg-zinc-50 border border-zinc-200/80">
             <div className="flex items-center justify-between text-xs font-semibold text-zinc-900">
               <span className="flex items-center gap-1.5">
                 <Sparkles size={14} className="text-zinc-700" />
-                Daily Sync Status
+                MongoDB Live Sync
               </span>
-              <span className="text-[10px] text-zinc-500 font-mono">100% OK</span>
+              <span className="text-[10px] text-zinc-500 font-mono">Active</span>
             </div>
             <p className="text-[11px] text-zinc-500 mt-1 leading-relaxed">
-              Monochrome dashboard active. Client-side state in sync.
+              Role: <b className="capitalize">{role}</b> • Verified access
             </p>
           </div>
         </div>
 
-        {/* Bottom: User Profile Section */}
-        <div className="p-3 border-t border-zinc-200/80">
-          <button
-            onClick={() => {
-              setActiveTab('settings');
-              setMobileOpen(false);
-            }}
-            className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-zinc-100 transition-colors cursor-pointer text-left group"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-zinc-900 text-white font-medium text-xs flex items-center justify-center shrink-0 border border-zinc-800">
-                AM
+        {/* Bottom: User Card and Logout Button */}
+        <div className="p-3 border-t border-zinc-200/80 space-y-2">
+          <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-50 border border-zinc-200/60">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-zinc-950 text-white font-mono text-xs font-bold flex items-center justify-center shrink-0">
+                {userSession ? userSession.name.slice(0, 2).toUpperCase() : 'AM'}
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-1">
-                  <span className="text-xs font-semibold text-zinc-950 truncate">Alex Morgan</span>
-                  <ShieldCheck size={12} className="text-zinc-700 shrink-0" />
-                </div>
-                <span className="text-[11px] text-zinc-600 truncate block">Administrator</span>
+                <span className="text-xs font-bold text-zinc-950 truncate block">
+                  {userSession?.name || 'Alex Morgan'}
+                </span>
+                <span className="text-[10px] text-zinc-400 uppercase font-mono block">
+                  {role}
+                </span>
               </div>
             </div>
-            <ChevronRight
-              size={14}
-              className="text-zinc-400 group-hover:text-zinc-950 group-hover:translate-x-0.5 transition-all"
-            />
-          </button>
+          </div>
+
+          {/* Quick Logout Button */}
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold text-zinc-600 hover:text-red-600 hover:bg-red-50 border border-zinc-200 hover:border-red-200 transition-all cursor-pointer"
+            >
+              <LogOut size={14} />
+              <span>Sign Out / Switch Role</span>
+            </button>
+          )}
         </div>
       </aside>
     </>

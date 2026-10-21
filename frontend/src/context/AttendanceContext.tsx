@@ -1,11 +1,12 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { api } from '../services/api';
 import {
   StudentEmployee,
   AttendanceRecord,
   AppSettings,
   ActivityItem,
   ToastMessage,
-  AttendanceStatus,
 } from '../types';
 import {
   INITIAL_PEOPLE,
@@ -35,15 +36,15 @@ interface AttendanceContextType {
   markModalPersonId: string | null;
   openMarkModal: (personId?: string) => void;
   closeMarkModal: () => void;
-  markAttendance: (record: Omit<AttendanceRecord, 'id'>) => void;
-  updateAttendance: (id: string, updates: Partial<AttendanceRecord>) => void;
-  deleteAttendance: (id: string) => void;
+  markAttendance: (record: Omit<AttendanceRecord, 'id'>) => Promise<void>;
+  updateAttendance: (id: string, updates: Partial<AttendanceRecord>) => Promise<void>;
+  deleteAttendance: (id: string) => Promise<void>;
   addPerson: (
     person: Omit<StudentEmployee, 'id' | 'attendancePercentage' | 'initials'>
-  ) => void;
-  updatePerson: (id: string, updates: Partial<StudentEmployee>) => void;
-  deletePerson: (id: string) => void;
-  updateSettings: (updates: Partial<AppSettings>) => void;
+  ) => Promise<void>;
+  updatePerson: (id: string, updates: Partial<StudentEmployee>) => Promise<void>;
+  deletePerson: (id: string) => Promise<void>;
+  updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
   resetToMockData: () => void;
   exportCSV: (recordsToExport?: AttendanceRecord[], filename?: string) => void;
   toasts: ToastMessage[];
@@ -51,6 +52,7 @@ interface AttendanceContextType {
   dismissToast: (id: string) => void;
   commandPaletteOpen: boolean;
   setCommandPaletteOpen: (open: boolean) => void;
+  isLoading: boolean;
 }
 
 const AttendanceContext = createContext<AttendanceContextType | undefined>(undefined);
@@ -69,6 +71,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [markModalPersonId, setMarkModalPersonId] = useState<string | null>(null);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Initialize state with localStorage fallbacks
   const [people, setPeople] = useState<StudentEmployee[]>(() => {
@@ -144,6 +147,55 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }
   }, [settings]);
 
+  // Load initial data from backend API with offline fallback
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadData() {
+      try {
+        setIsLoading(true);
+        const [peopleRes, recordsRes, settingsRes] = await Promise.allSettled([
+          api.getPeople(),
+          api.getAttendance(),
+          api.getSettings(),
+        ]);
+
+        if (!isMounted) return;
+
+        let connected = false;
+
+        if (peopleRes.status === 'fulfilled' && peopleRes.value.length > 0) {
+          setPeople(peopleRes.value);
+          connected = true;
+        }
+
+        if (recordsRes.status === 'fulfilled' && recordsRes.value.length > 0) {
+          setAttendanceRecords(recordsRes.value);
+          connected = true;
+        }
+
+        if (settingsRes.status === 'fulfilled' && settingsRes.value) {
+          setSettings(settingsRes.value);
+          connected = true;
+        }
+
+        if (connected) {
+          addToast('Connected to Backend', 'Live database records loaded', 'success');
+        }
+      } catch (err) {
+        console.warn('Backend server offline, using local storage cache:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // Keyboard shortcut for Command Palette (Ctrl+K or Cmd+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -198,38 +250,50 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return Number(((score / personRecords.length) * 100).toFixed(1));
   };
 
-  const markAttendance = (data: Omit<AttendanceRecord, 'id'>) => {
-    const existingIndex = attendanceRecords.findIndex(
-      (r) => r.personId === data.personId && r.date === data.date
-    );
+  // Mark Attendance (Async backend call with local optimistic fallback)
+  const markAttendance = async (data: Omit<AttendanceRecord, 'id'>) => {
+    let savedRecord: AttendanceRecord = {
+      id: `rec-${Date.now()}`,
+      ...data,
+    };
 
-    let updatedRecords: AttendanceRecord[];
-    if (existingIndex >= 0) {
-      updatedRecords = [...attendanceRecords];
-      updatedRecords[existingIndex] = {
-        ...updatedRecords[existingIndex],
-        ...data,
-      };
-    } else {
-      const newRecord: AttendanceRecord = {
-        id: `rec-${Date.now()}`,
-        ...data,
-      };
-      updatedRecords = [newRecord, ...attendanceRecords];
+    let backendSaved = false;
+
+    try {
+      const serverResult = await api.markAttendance(data);
+      if (serverResult && serverResult.id) {
+        savedRecord = serverResult;
+        backendSaved = true;
+      }
+    } catch (err) {
+      console.warn('Backend markAttendance offline, saving locally:', err);
     }
 
-    setAttendanceRecords(updatedRecords);
+    setAttendanceRecords((prev) => {
+      const existingIndex = prev.findIndex(
+        (r) => r.personId === data.personId && r.date === data.date
+      );
+      let updated: AttendanceRecord[];
+      if (existingIndex >= 0) {
+        updated = [...prev];
+        updated[existingIndex] = { ...updated[existingIndex], ...savedRecord };
+      } else {
+        updated = [savedRecord, ...prev];
+      }
 
-    // Update person attendance percentage
-    setPeople((prev) =>
-      prev.map((p) => {
-        if (p.id === data.personId) {
-          const newPct = calculatePersonPercentage(p.id, updatedRecords);
-          return { ...p, attendancePercentage: newPct };
-        }
-        return p;
-      })
-    );
+      // Update person percentage
+      setPeople((prevPeople) =>
+        prevPeople.map((p) => {
+          if (p.id === data.personId) {
+            const newPct = calculatePersonPercentage(p.id, updated);
+            return { ...p, attendancePercentage: newPct };
+          }
+          return p;
+        })
+      );
+
+      return updated;
+    });
 
     // Add activity log
     const newActivity: ActivityItem = {
@@ -244,21 +308,37 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setActivities((prev) => [newActivity, ...prev.slice(0, 19)]);
 
     addToast(
-      'Attendance Recorded',
+      backendSaved ? 'Saved to Database' : 'Attendance Recorded',
       `${data.personName} marked as ${data.status.toUpperCase()} for ${data.date}`,
       'success'
     );
     closeMarkModal();
   };
 
-  const updateAttendance = (id: string, updates: Partial<AttendanceRecord>) => {
-    const updated = attendanceRecords.map((r) => (r.id === id ? { ...r, ...updates } : r));
-    setAttendanceRecords(updated);
+  // Update Attendance
+  const updateAttendance = async (id: string, updates: Partial<AttendanceRecord>) => {
+    try {
+      await api.updateAttendance(id, updates);
+    } catch (err) {
+      console.warn('Backend updateAttendance offline, updating locally:', err);
+    }
+
+    setAttendanceRecords((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...updates } : r))
+    );
     addToast('Record Updated', 'Attendance record updated successfully', 'info');
   };
 
-  const deleteAttendance = (id: string) => {
+  // Delete Attendance
+  const deleteAttendance = async (id: string) => {
     const target = attendanceRecords.find((r) => r.id === id);
+
+    try {
+      await api.deleteAttendance(id);
+    } catch (err) {
+      console.warn('Backend deleteAttendance offline, deleting locally:', err);
+    }
+
     setAttendanceRecords((prev) => prev.filter((r) => r.id !== id));
     addToast(
       'Record Deleted',
@@ -267,7 +347,8 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
   };
 
-  const addPerson = (
+  // Add Member / Person
+  const addPerson = async (
     personData: Omit<StudentEmployee, 'id' | 'attendancePercentage' | 'initials'>
   ) => {
     const nameParts = personData.name.trim().split(' ');
@@ -276,18 +357,34 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
         : nameParts[0].slice(0, 2).toUpperCase();
 
-    const newPerson: StudentEmployee = {
+    let newPerson: StudentEmployee = {
       id: `emp-${Date.now()}`,
       ...personData,
       attendancePercentage: 100,
       initials,
     };
 
+    try {
+      const serverResult = await api.createPerson({ ...newPerson });
+      if (serverResult && serverResult.id) {
+        newPerson = { ...serverResult, initials };
+      }
+    } catch (err) {
+      console.warn('Backend createPerson offline, saving locally:', err);
+    }
+
     setPeople((prev) => [newPerson, ...prev]);
     addToast('Member Added', `${newPerson.name} added to the directory`, 'success');
   };
 
-  const updatePerson = (id: string, updates: Partial<StudentEmployee>) => {
+  // Update Member / Person
+  const updatePerson = async (id: string, updates: Partial<StudentEmployee>) => {
+    try {
+      await api.updatePerson(id, updates);
+    } catch (err) {
+      console.warn('Backend updatePerson offline, updating locally:', err);
+    }
+
     setPeople((prev) =>
       prev.map((p) => {
         if (p.id === id) {
@@ -307,8 +404,16 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     addToast('Profile Updated', 'Member details saved', 'info');
   };
 
-  const deletePerson = (id: string) => {
+  // Delete Member / Person
+  const deletePerson = async (id: string) => {
     const person = people.find((p) => p.id === id);
+
+    try {
+      await api.deletePerson(id);
+    } catch (err) {
+      console.warn('Backend deletePerson offline, deleting locally:', err);
+    }
+
     setPeople((prev) => prev.filter((p) => p.id !== id));
     setAttendanceRecords((prev) => prev.filter((r) => r.personId !== id));
     addToast(
@@ -318,11 +423,19 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     );
   };
 
-  const updateSettings = (updates: Partial<AppSettings>) => {
+  // Update Settings
+  const updateSettings = async (updates: Partial<AppSettings>) => {
+    try {
+      await api.updateSettings(updates);
+    } catch (err) {
+      console.warn('Backend updateSettings offline, saving locally:', err);
+    }
+
     setSettings((prev) => ({ ...prev, ...updates }));
     addToast('Settings Saved', 'Application preferences updated', 'success');
   };
 
+  // Reset to Mock Data
   const resetToMockData = () => {
     localStorage.removeItem(STORAGE_KEYS.PEOPLE);
     localStorage.removeItem(STORAGE_KEYS.RECORDS);
@@ -336,6 +449,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     addToast('Data Reset', 'All sample records and settings restored', 'info');
   };
 
+  // Export CSV
   const exportCSV = (recordsToExport?: AttendanceRecord[], filename = 'attendly_records.csv') => {
     const list = recordsToExport || attendanceRecords;
     if (list.length === 0) {
@@ -343,7 +457,17 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return;
     }
 
-    const headers = ['ID', 'Name', 'Employee ID', 'Department', 'Date', 'Check In', 'Check Out', 'Status', 'Notes'];
+    const headers = [
+      'ID',
+      'Name',
+      'Employee ID',
+      'Department',
+      'Date',
+      'Check In',
+      'Check Out',
+      'Status',
+      'Notes',
+    ];
     const rows = list.map((r) => [
       `"${r.id}"`,
       `"${r.personName}"`,
@@ -399,6 +523,7 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         dismissToast,
         commandPaletteOpen,
         setCommandPaletteOpen,
+        isLoading,
       }}
     >
       {children}

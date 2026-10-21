@@ -7,6 +7,7 @@ import { Button } from '../common/Button';
 import { ConfirmDialog } from '../common/ConfirmDialog';
 import { AddPersonModal } from './AddPersonModal';
 import { PersonDetailsModal } from './PersonDetailsModal';
+import { BulkUploadModal } from './BulkUploadModal';
 import {
   Search,
   Filter,
@@ -19,6 +20,7 @@ import {
   Mail,
   Building,
   Calendar,
+  Upload,
 } from 'lucide-react';
 
 export const PeopleDirectory: React.FC = () => {
@@ -34,6 +36,7 @@ export const PeopleDirectory: React.FC = () => {
 
   // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState<StudentEmployee | null>(null);
   const [viewingPerson, setViewingPerson] = useState<StudentEmployee | null>(null);
   const [deletingPerson, setDeletingPerson] = useState<StudentEmployee | null>(null);
@@ -119,6 +122,15 @@ export const PeopleDirectory: React.FC = () => {
               <LayoutGrid size={15} />
             </button>
           </div>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Upload size={14} />}
+            onClick={() => setIsBulkModalOpen(true)}
+          >
+            Bulk Upload (CSV)
+          </Button>
 
           <Button
             variant="primary"
@@ -408,6 +420,12 @@ export const PeopleDirectory: React.FC = () => {
         isOpen={Boolean(viewingPerson)}
         onClose={() => setViewingPerson(null)}
         onEdit={(p) => handleEdit(p)}
+      />
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
       />
 
       {/* Delete Confirmation Dialog */}
