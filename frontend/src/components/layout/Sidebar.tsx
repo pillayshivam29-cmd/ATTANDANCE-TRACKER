@@ -4,8 +4,6 @@ import {
   CheckSquare,
   CalendarDays,
   Users,
-  BarChart3,
-  Settings,
   Sparkles,
   ChevronRight,
   ShieldCheck,
@@ -69,18 +67,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <Users size={18} />,
       badge: `${people.length}`,
       allowedRoles: ['admin', 'teacher'],
-    },
-    {
-      id: 'reports',
-      label: 'Reports & Analytics',
-      icon: <BarChart3 size={18} />,
-      allowedRoles: ['admin', 'teacher'],
-    },
-    {
-      id: 'settings',
-      label: 'Institution Settings',
-      icon: <Settings size={18} />,
-      allowedRoles: ['admin'],
     },
   ];
 

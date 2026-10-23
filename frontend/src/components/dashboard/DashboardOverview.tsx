@@ -4,20 +4,20 @@ import {
   GraduationCap, 
   UserCheck, 
   UserX, 
-  Calendar, 
   Clock, 
   Search, 
-  Filter, 
   CreditCard, 
   CheckCircle2, 
   AlertCircle, 
   Phone, 
-  BookOpen, 
-  Download, 
   Plus, 
-  ChevronRight,
-  ArrowUpDown
+  Trash2,
+  Upload,
+  X,
+  FileSpreadsheet,
+  Download
 } from 'lucide-react';
+import { BulkUploadModal } from '../people/BulkUploadModal';
 
 // ==========================================
 // 1. DATA TYPES
@@ -60,12 +60,10 @@ interface TimetableSlot {
 const INITIAL_TEACHERS: TeacherItem[] = [
   { id: 'T-101', name: 'Prof. Marcus Chen', subject: 'Mathematics & Calculus', assignedClass: 'Grade 10-A', phone: '+91 98765-43210', status: 'present', checkInTime: '08:15 AM' },
   { id: 'T-102', name: 'Dr. Sophia Rodriguez', subject: 'Physics & Lab', assignedClass: 'Grade 11-A', phone: '+91 98765-43211', status: 'present', checkInTime: '08:20 AM' },
-  { id: 'T-103', name: 'Julian Hayes', subject: 'English Literature', assignedClass: 'Grade 10-B', phone: '+91 98765-43212', status: 'present', checkInTime: '08:25 AM' },
+  { id: 'T-103', name: 'Julian Hayes', subject: 'English Literature', assignedClass: 'Grade 10-B', phone: '+91 98765-43212', status: 'present', checkInTime: '08:45 AM' },
   { id: 'T-104', name: 'Amara Okafor', subject: 'Chemistry', assignedClass: 'Grade 12-A', phone: '+91 98765-43213', status: 'absent', checkInTime: '--' },
   { id: 'T-105', name: 'Rajesh Sharma', subject: 'Computer Science & AI', assignedClass: 'Grade 11-B', phone: '+91 98765-43214', status: 'present', checkInTime: '08:05 AM' },
   { id: 'T-106', name: 'Priya Patel', subject: 'Social Studies & Civics', assignedClass: 'Grade 9-A', phone: '+91 98765-43215', status: 'present', checkInTime: '08:30 AM' },
-  { id: 'T-107', name: 'Elena Rostova', subject: 'Biology & Botany', assignedClass: 'Grade 12-B', phone: '+91 98765-43216', status: 'absent', checkInTime: '--' },
-  { id: 'T-108', name: 'Vikram Verma', subject: 'Physical Education', assignedClass: 'All Grades', phone: '+91 98765-43217', status: 'present', checkInTime: '07:55 AM' },
 ];
 
 const INITIAL_STUDENTS: StudentItem[] = [
@@ -147,32 +145,6 @@ const INITIAL_STUDENTS: StudentItem[] = [
     dueAmount: '₹25,000',
     attendanceRate: 91.0,
   },
-  {
-    id: 'S-7',
-    admissionNo: 'ADM-2026-107',
-    name: 'Maya Lin',
-    gradeClass: 'Grade 10-B',
-    parentName: 'David & Jenny Lin',
-    parentPhone: '+91 98234-11007',
-    feeStatus: 'Paid',
-    feePaidTill: 'Paid till Term 3 (Jan 2027)',
-    totalFee: '₹60,000',
-    dueAmount: '₹0',
-    attendanceRate: 94.0,
-  },
-  {
-    id: 'S-8',
-    admissionNo: 'ADM-2026-108',
-    name: 'Kabir Verma',
-    gradeClass: 'Grade 12-A',
-    parentName: 'Anil Verma',
-    parentPhone: '+91 98234-11008',
-    feeStatus: 'Pending',
-    feePaidTill: 'Pending from August 2026',
-    totalFee: '₹80,000',
-    dueAmount: '₹40,000',
-    attendanceRate: 81.5,
-  },
 ];
 
 const TIMETABLE_DATA: Record<string, TimetableSlot[]> = {
@@ -182,53 +154,43 @@ const TIMETABLE_DATA: Record<string, TimetableSlot[]> = {
     { period: 'Break', time: '10:10 - 10:30 AM', subject: 'Morning Recess', teacher: '--', room: 'Campus Court' },
     { period: 'Period 3', time: '10:30 - 11:20 AM', subject: 'English Literature', teacher: 'Julian Hayes', room: 'Room 201' },
     { period: 'Period 4', time: '11:20 - 12:10 PM', subject: 'Computer Science', teacher: 'Rajesh Sharma', room: 'Computer Lab 1' },
-    { period: 'Period 5', time: '12:50 - 01:40 PM', subject: 'Social Studies', teacher: 'Priya Patel', room: 'Room 201' },
-    { period: 'Period 6', time: '01:40 - 02:30 PM', subject: 'Physical Education', teacher: 'Vikram Verma', room: 'Sports Complex' },
   ],
   'Grade 10-B': [
     { period: 'Period 1', time: '08:30 - 09:20 AM', subject: 'English Literature', teacher: 'Julian Hayes', room: 'Room 202' },
     { period: 'Period 2', time: '09:20 - 10:10 AM', subject: 'Mathematics', teacher: 'Prof. Marcus Chen', room: 'Room 202' },
     { period: 'Break', time: '10:10 - 10:30 AM', subject: 'Morning Recess', teacher: '--', room: 'Campus Court' },
     { period: 'Period 3', time: '10:30 - 11:20 AM', subject: 'Chemistry Lab', teacher: 'Amara Okafor', room: 'Chem Lab' },
-    { period: 'Period 4', time: '11:20 - 12:10 PM', subject: 'Social Studies', teacher: 'Priya Patel', room: 'Room 202' },
-    { period: 'Period 5', time: '12:50 - 01:40 PM', subject: 'Computer Science', teacher: 'Rajesh Sharma', room: 'Computer Lab 1' },
-    { period: 'Period 6', time: '01:40 - 02:30 PM', subject: 'Library & Reading', teacher: 'Librarian Staff', room: 'Central Library' },
   ],
   'Grade 11-A': [
     { period: 'Period 1', time: '08:30 - 09:20 AM', subject: 'Advanced Physics', teacher: 'Dr. Sophia Rodriguez', room: 'Room 301' },
     { period: 'Period 2', time: '09:20 - 10:10 AM', subject: 'Chemistry Theory', teacher: 'Amara Okafor', room: 'Room 301' },
     { period: 'Break', time: '10:10 - 10:30 AM', subject: 'Morning Recess', teacher: '--', room: 'Campus Court' },
     { period: 'Period 3', time: '10:30 - 11:20 AM', subject: 'Calculus & Vectors', teacher: 'Prof. Marcus Chen', room: 'Room 301' },
-    { period: 'Period 4', time: '11:20 - 12:10 PM', subject: 'Python & AI Algorithms', teacher: 'Rajesh Sharma', room: 'CS Lab 2' },
-    { period: 'Period 5', time: '12:50 - 01:40 PM', subject: 'Biology & Biotech', teacher: 'Elena Rostova', room: 'Bio Lab' },
-    { period: 'Period 6', time: '01:40 - 02:30 PM', subject: 'Physical Sports', teacher: 'Vikram Verma', room: 'Ground' },
   ],
   'Grade 12-A': [
     { period: 'Period 1', time: '08:30 - 09:20 AM', subject: 'Calculus & Integration', teacher: 'Prof. Marcus Chen', room: 'Room 401' },
     { period: 'Period 2', time: '09:20 - 10:10 AM', subject: 'Quantum Physics', teacher: 'Dr. Sophia Rodriguez', room: 'Room 401' },
     { period: 'Break', time: '10:10 - 10:30 AM', subject: 'Morning Recess', teacher: '--', room: 'Campus Court' },
     { period: 'Period 3', time: '10:30 - 11:20 AM', subject: 'Organic Chemistry', teacher: 'Amara Okafor', room: 'Room 401' },
-    { period: 'Period 4', time: '11:20 - 12:10 PM', subject: 'English & Soft Skills', teacher: 'Julian Hayes', room: 'Room 401' },
-    { period: 'Period 5', time: '12:50 - 01:40 PM', subject: 'Board Exam Workshop', teacher: 'All Senior Faculty', room: 'Auditorium' },
-    { period: 'Period 6', time: '01:40 - 02:30 PM', subject: 'Self Study / Mentorship', teacher: 'Counselor Team', room: 'Room 401' },
   ],
 };
 
 export const DashboardOverview: React.FC = () => {
-  // Navigation Section State
   const [activeTab, setActiveTab] = useState<'students' | 'teachers' | 'timetable'>('students');
 
   // Teachers State with LocalStorage persistence
   const [teachers, setTeachers] = useState<TeacherItem[]>(() => {
     try {
-      const saved = localStorage.getItem('attendly_teachers_v1');
-      return saved ? JSON.parse(saved) : INITIAL_TEACHERS;
+      const saved = localStorage.getItem('attendly_teachers_att_v2');
+      if (saved) return JSON.parse(saved);
+      const savedOld = localStorage.getItem('attendly_teachers_v1');
+      return savedOld ? JSON.parse(savedOld) : INITIAL_TEACHERS;
     } catch {
       return INITIAL_TEACHERS;
     }
   });
 
-  // Students State
+  // Students & Fee Records State with LocalStorage
   const [students, setStudents] = useState<StudentItem[]>(() => {
     try {
       const saved = localStorage.getItem('attendly_students_v1');
@@ -238,21 +200,34 @@ export const DashboardOverview: React.FC = () => {
     }
   });
 
+  // Bulk Upload Modal State
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkModalType, setBulkModalType] = useState<'students' | 'teachers' | 'fees'>('fees');
+
+  // Add Student & Fee Modal State
+  const [isAddStudentFeeOpen, setIsAddStudentFeeOpen] = useState(false);
+  const [newAdmNo, setNewAdmNo] = useState('');
+  const [newName, setNewName] = useState('');
+  const [newClass, setNewClass] = useState('Grade 10-A');
+  const [newParentName, setNewParentName] = useState('');
+  const [newParentPhone, setNewParentPhone] = useState('');
+  const [newFeeStatus, setNewFeeStatus] = useState<'Paid' | 'Partial' | 'Pending'>('Paid');
+  const [newPaidTill, setNewPaidTill] = useState('Paid Full Year (2026-27)');
+  const [newDueAmount, setNewDueAmount] = useState('₹0');
+
   // Filter & Search
   const [studentSearch, setStudentSearch] = useState('');
   const [classFilter, setClassFilter] = useState('all');
   const [feeFilter, setFeeFilter] = useState<'all' | 'Paid' | 'Partial' | 'Pending'>('all');
-
-  // Timetable Class Selection
   const [selectedClass, setSelectedClass] = useState<string>('Grade 10-A');
 
-  // Calculate Key Stat Counters
+  // Key Counters
   const totalStudents = students.length;
   const totalTeachers = teachers.length;
   const teachersPresent = teachers.filter((t) => t.status === 'present').length;
   const teachersAbsent = teachers.filter((t) => t.status === 'absent').length;
 
-  // Toggle Teacher Present/Absent Status
+  // Toggle Teacher Status
   const toggleTeacherStatus = (teacherId: string) => {
     const updated = teachers.map((t) => {
       if (t.id === teacherId) {
@@ -266,13 +241,72 @@ export const DashboardOverview: React.FC = () => {
       return t;
     });
     setTeachers(updated);
-    localStorage.setItem('attendly_teachers_v1', JSON.stringify(updated));
+    localStorage.setItem('attendly_teachers_att_v2', JSON.stringify(updated));
+  };
+
+  // Delete Student Fee Record
+  const handleDeleteStudent = (id: string) => {
+    const updated = students.filter((s) => s.id !== id);
+    setStudents(updated);
+    localStorage.setItem('attendly_students_v1', JSON.stringify(updated));
+  };
+
+  // Clear Sample Data
+  const handleClearSampleData = () => {
+    if (window.confirm('Kya aap saara sample data delete karke clean slate karna chahte hain?')) {
+      setStudents([]);
+      localStorage.setItem('attendly_students_v1', JSON.stringify([]));
+    }
+  };
+
+  // Submit New Student & Fee
+  const handleCreateStudentFee = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+
+    const newStudent: StudentItem = {
+      id: `S-${Date.now()}`,
+      admissionNo: newAdmNo.trim() || `ADM-2026-${100 + students.length + 1}`,
+      name: newName.trim(),
+      gradeClass: newClass,
+      parentName: newParentName.trim() || 'Parent/Guardian',
+      parentPhone: newParentPhone.trim() || '+91 98000-00000',
+      feeStatus: newFeeStatus,
+      feePaidTill: newPaidTill.trim() || 'Paid Full Year',
+      totalFee: '₹60,000',
+      dueAmount: newFeeStatus === 'Paid' ? '₹0' : (newDueAmount.trim() || '₹15,000'),
+      attendanceRate: 95,
+    };
+
+    const updated = [...students, newStudent];
+    setStudents(updated);
+    localStorage.setItem('attendly_students_v1', JSON.stringify(updated));
+
+    // Also add to attendance roster
+    const attendanceItem = {
+      id: `STU-${Date.now()}`,
+      admissionNo: newStudent.admissionNo,
+      name: newStudent.name,
+      gradeClass: newStudent.gradeClass,
+      parentName: newStudent.parentName,
+      parentPhone: newStudent.parentPhone,
+      checkIn: '08:15 AM',
+      status: 'present' as const,
+    };
+    const existingAtt = JSON.parse(localStorage.getItem('attendly_students_att_v2') || '[]');
+    localStorage.setItem('attendly_students_att_v2', JSON.stringify([...existingAtt, attendanceItem]));
+
+    // Reset & Close
+    setNewName('');
+    setNewAdmNo('');
+    setNewParentName('');
+    setNewParentPhone('');
+    setIsAddStudentFeeOpen(false);
   };
 
   // Filtered Students
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
-      // Search by Name or Admission No or Parent Name
       if (studentSearch) {
         const q = studentSearch.toLowerCase();
         const matchesName = s.name.toLowerCase().includes(q);
@@ -280,17 +314,8 @@ export const DashboardOverview: React.FC = () => {
         const matchesParent = s.parentName.toLowerCase().includes(q);
         if (!matchesName && !matchesAdm && !matchesParent) return false;
       }
-
-      // Class Filter
-      if (classFilter !== 'all' && s.gradeClass !== classFilter) {
-        return false;
-      }
-
-      // Fee Filter
-      if (feeFilter !== 'all' && s.feeStatus !== feeFilter) {
-        return false;
-      }
-
+      if (classFilter !== 'all' && s.gradeClass !== classFilter) return false;
+      if (feeFilter !== 'all' && s.feeStatus !== feeFilter) return false;
       return true;
     });
   }, [students, studentSearch, classFilter, feeFilter]);
@@ -348,11 +373,8 @@ export const DashboardOverview: React.FC = () => {
         </div>
       </div>
 
-      {/* ======================================================== */}
-      {/* 4 KEY STAT CARDS (EXACTLY AS REQUESTED) */}
-      {/* ======================================================== */}
+      {/* 4 Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. Total Students */}
         <div className="p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-2xs hover:shadow-xs transition-shadow">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider font-mono text-zinc-500">
@@ -365,12 +387,11 @@ export const DashboardOverview: React.FC = () => {
           <div className="text-3xl font-extrabold tracking-tight text-zinc-950">
             {totalStudents}
           </div>
-          <p className="text-[11px] text-zinc-500 mt-1 flex items-center gap-1">
-            <span>Enrolled across 4 sections</span>
+          <p className="text-[11px] text-zinc-500 mt-1">
+            Enrolled student records
           </p>
         </div>
 
-        {/* 2. Total Teachers */}
         <div className="p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-2xs hover:shadow-xs transition-shadow">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider font-mono text-zinc-500">
@@ -388,7 +409,6 @@ export const DashboardOverview: React.FC = () => {
           </p>
         </div>
 
-        {/* 3. Teachers Present Today */}
         <div className="p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-2xs hover:shadow-xs transition-shadow">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider font-mono text-emerald-600">
@@ -401,13 +421,11 @@ export const DashboardOverview: React.FC = () => {
           <div className="text-3xl font-extrabold tracking-tight text-zinc-950">
             {teachersPresent}
           </div>
-          <p className="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-            <span>{Math.round((teachersPresent / totalTeachers) * 100)}% Faculty Present</span>
+          <p className="text-[11px] text-emerald-600 font-medium mt-1">
+            {totalTeachers > 0 ? Math.round((teachersPresent / totalTeachers) * 100) : 0}% Faculty Present
           </p>
         </div>
 
-        {/* 4. Teachers Absent Today */}
         <div className="p-5 rounded-2xl bg-white border border-zinc-200/90 shadow-2xs hover:shadow-xs transition-shadow">
           <div className="flex items-center justify-between text-zinc-400 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider font-mono text-rose-600">
@@ -431,35 +449,46 @@ export const DashboardOverview: React.FC = () => {
       {/* ======================================================== */}
       {activeTab === 'students' && (
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-2xs overflow-hidden">
-          {/* Header & Filters */}
+          {/* Header & Action Controls */}
           <div className="p-5 border-b border-zinc-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <h2 className="text-base font-bold text-zinc-950">
-                Students Registry & Fee Records
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-zinc-950">
+                  Students Registry & Fee Records
+                </h2>
+                {students.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearSampleData}
+                    className="text-[11px] text-red-600 hover:underline cursor-pointer font-mono"
+                  >
+                    (Clear Sample Data)
+                  </button>
+                )}
+              </div>
               <p className="text-xs text-zinc-500 mt-0.5">
                 Complete student records with Admission No, Class, Parents info, Fee paid status, and coverage.
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Search Bar */}
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search by Name, Admission No, Parent..."
+                  placeholder="Search Name, Admission No..."
                   value={studentSearch}
                   onChange={(e) => setStudentSearch(e.target.value)}
-                  className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-zinc-200 w-60 sm:w-72 focus:outline-none focus:border-zinc-950"
+                  className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-zinc-200 w-44 sm:w-56 focus:outline-none focus:border-zinc-950"
                 />
-                <Search size={14} className="absolute left-2.5 top-2 text-zinc-400" />
+                <Search size={13} className="absolute left-2.5 top-2 text-zinc-400" />
               </div>
 
               {/* Class Filter */}
               <select
                 value={classFilter}
                 onChange={(e) => setClassFilter(e.target.value)}
-                className="px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 bg-white text-zinc-800 focus:outline-none focus:border-zinc-950 cursor-pointer"
+                className="px-2 py-1.5 text-xs rounded-lg border border-zinc-200 bg-white text-zinc-800 focus:outline-none focus:border-zinc-950"
               >
                 <option value="all">All Classes</option>
                 <option value="Grade 10-A">Grade 10-A</option>
@@ -472,13 +501,36 @@ export const DashboardOverview: React.FC = () => {
               <select
                 value={feeFilter}
                 onChange={(e) => setFeeFilter(e.target.value as any)}
-                className="px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 bg-white text-zinc-800 focus:outline-none focus:border-zinc-950 cursor-pointer"
+                className="px-2 py-1.5 text-xs rounded-lg border border-zinc-200 bg-white text-zinc-800 focus:outline-none focus:border-zinc-950"
               >
-                <option value="all">All Fee Status</option>
+                <option value="all">All Fees</option>
                 <option value="Paid">Fully Paid</option>
-                <option value="Partial">Partially Paid</option>
-                <option value="Pending">Pending / Overdue</option>
+                <option value="Partial">Partial</option>
+                <option value="Pending">Pending</option>
               </select>
+
+              {/* 💳 BULK UPLOAD FEES CSV BUTTON */}
+              <button
+                type="button"
+                onClick={() => {
+                  setBulkModalType('fees');
+                  setIsBulkModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-semibold text-zinc-800 cursor-pointer shadow-2xs"
+              >
+                <FileSpreadsheet size={13} className="text-zinc-600" />
+                <span>Bulk Upload Fees (CSV)</span>
+              </button>
+
+              {/* ➕ ADD STUDENT & FEE BUTTON */}
+              <button
+                type="button"
+                onClick={() => setIsAddStudentFeeOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-semibold cursor-pointer shadow-xs"
+              >
+                <Plus size={13} />
+                <span>+ Add Student & Fee</span>
+              </button>
             </div>
           </div>
 
@@ -493,37 +545,33 @@ export const DashboardOverview: React.FC = () => {
                   <th className="py-3 px-4">Parents Name & Phone</th>
                   <th className="py-3 px-4">Fee Status</th>
                   <th className="py-3 px-4">Fees Paid Till (Coverage)</th>
-                  <th className="py-3 px-4 text-right">Attendance %</th>
+                  <th className="py-3 px-4 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 text-xs">
                 {filteredStudents.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-zinc-400">
-                      Koi student record nahi mila. Search ya filter change karke dekhein.
+                      Koi student record nahi mila. "+ Add Student & Fee" ya "Bulk Upload Fees" se apna real data add karein.
                     </td>
                   </tr>
                 ) : (
                   filteredStudents.map((s) => (
                     <tr key={s.id} className="hover:bg-zinc-50/60 transition-colors">
-                      {/* Admission No */}
                       <td className="py-3.5 px-4 font-mono font-semibold text-zinc-900">
                         {s.admissionNo}
                       </td>
 
-                      {/* Student Name */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-zinc-950">{s.name}</div>
+                      <td className="py-3.5 px-4 font-bold text-zinc-950">
+                        {s.name}
                       </td>
 
-                      {/* Class */}
                       <td className="py-3.5 px-4">
                         <span className="px-2 py-0.5 rounded-md bg-zinc-100 font-mono text-[11px] font-semibold text-zinc-800 border border-zinc-200">
                           {s.gradeClass}
                         </span>
                       </td>
 
-                      {/* Parents Name & Phone */}
                       <td className="py-3.5 px-4">
                         <div className="font-medium text-zinc-900">{s.parentName}</div>
                         <div className="text-[11px] text-zinc-500 font-mono flex items-center gap-1 mt-0.5">
@@ -532,45 +580,47 @@ export const DashboardOverview: React.FC = () => {
                         </div>
                       </td>
 
-                      {/* Fee Status Badge */}
                       <td className="py-3.5 px-4">
                         {s.feeStatus === 'Paid' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-200">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold border border-emerald-200">
                             <CheckCircle2 size={11} />
                             <span>Paid</span>
                           </span>
                         )}
                         {s.feeStatus === 'Partial' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold border border-amber-200">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold border border-amber-200">
                             <CreditCard size={11} />
                             <span>Partially Paid</span>
                           </span>
                         )}
                         {s.feeStatus === 'Pending' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[11px] font-semibold border border-rose-200">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[11px] font-semibold border border-rose-200">
                             <AlertCircle size={11} />
                             <span>Pending</span>
                           </span>
                         )}
                       </td>
 
-                      {/* Fees Paid Till (Coverage Details) */}
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-zinc-900 text-xs">
                           {s.feePaidTill}
                         </div>
-                        {s.dueAmount !== '₹0' && (
+                        {s.dueAmount && s.dueAmount !== '₹0' && (
                           <div className="text-[11px] text-rose-600 font-mono font-medium mt-0.5">
                             Due Amount: {s.dueAmount}
                           </div>
                         )}
                       </td>
 
-                      {/* Attendance % */}
                       <td className="py-3.5 px-4 text-right">
-                        <span className="font-mono font-bold text-zinc-950">
-                          {s.attendanceRate}%
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteStudent(s.id)}
+                          className="p-1.5 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                          title="Delete Record"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -579,16 +629,14 @@ export const DashboardOverview: React.FC = () => {
             </table>
           </div>
 
-          <div className="p-3 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-between text-xs text-zinc-500">
+          <div className="p-3.5 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-between text-xs text-zinc-500">
             <span>Showing {filteredStudents.length} of {students.length} students enrolled</span>
-            <span className="font-mono">Academic Year 2026-2027</span>
+            <span className="font-mono">Academic Session 2026-2027</span>
           </div>
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* SECTION 2: TEACHER ATTENDANCE ROSTER */}
-      {/* ======================================================== */}
+      {/* SECTION 2: TEACHERS ATTENDANCE */}
       {activeTab === 'teachers' && (
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-2xs overflow-hidden">
           <div className="p-5 border-b border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -597,16 +645,21 @@ export const DashboardOverview: React.FC = () => {
                 Faculty & Teacher Attendance Roster
               </h2>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Daily roll call for faculty members. Click any button to toggle Present / Absent status in real-time.
+                Daily roll call for faculty members.
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
-                {teachersPresent} Present
-              </span>
-              <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 font-semibold">
-                {teachersAbsent} Absent
-              </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setBulkModalType('teachers');
+                  setIsBulkModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 text-xs font-semibold text-zinc-800 cursor-pointer shadow-2xs"
+              >
+                <FileSpreadsheet size={13} className="text-zinc-600" />
+                <span>Bulk Upload Teachers (CSV)</span>
+              </button>
             </div>
           </div>
 
@@ -616,7 +669,7 @@ export const DashboardOverview: React.FC = () => {
                 <tr className="bg-zinc-50/70 border-b border-zinc-200/80 text-[11px] font-mono uppercase text-zinc-500 tracking-wider">
                   <th className="py-3 px-4">Faculty ID</th>
                   <th className="py-3 px-4">Teacher Name</th>
-                  <th className="py-3 px-4">Subject & Specialization</th>
+                  <th className="py-3 px-4">Subject</th>
                   <th className="py-3 px-4">Assigned Class</th>
                   <th className="py-3 px-4">Check-in Time</th>
                   <th className="py-3 px-4">Today's Status</th>
@@ -626,34 +679,15 @@ export const DashboardOverview: React.FC = () => {
               <tbody className="divide-y divide-zinc-100 text-xs">
                 {teachers.map((t) => (
                   <tr key={t.id} className="hover:bg-zinc-50/60 transition-colors">
-                    {/* Faculty ID */}
-                    <td className="py-3.5 px-4 font-mono text-zinc-500 font-medium">
-                      {t.id}
-                    </td>
-
-                    {/* Teacher Name */}
-                    <td className="py-3.5 px-4 font-bold text-zinc-950">
-                      {t.name}
-                    </td>
-
-                    {/* Subject */}
-                    <td className="py-3.5 px-4 text-zinc-700 font-medium">
-                      {t.subject}
-                    </td>
-
-                    {/* Class */}
+                    <td className="py-3.5 px-4 font-mono text-zinc-500">{t.id}</td>
+                    <td className="py-3.5 px-4 font-bold text-zinc-950">{t.name}</td>
+                    <td className="py-3.5 px-4 text-zinc-700">{t.subject}</td>
                     <td className="py-3.5 px-4">
-                      <span className="px-2 py-0.5 rounded-md bg-zinc-100 font-mono text-[11px] text-zinc-800">
+                      <span className="px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 font-mono text-[11px]">
                         {t.assignedClass}
                       </span>
                     </td>
-
-                    {/* Checkin Time */}
-                    <td className="py-3.5 px-4 font-mono text-zinc-600">
-                      {t.checkInTime}
-                    </td>
-
-                    {/* Status Badge */}
+                    <td className="py-3.5 px-4 font-mono text-zinc-600">{t.checkInTime}</td>
                     <td className="py-3.5 px-4">
                       {t.status === 'present' ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-950 text-white text-[11px] font-semibold">
@@ -667,13 +701,11 @@ export const DashboardOverview: React.FC = () => {
                         </span>
                       )}
                     </td>
-
-                    {/* Action Button: Toggle */}
                     <td className="py-3.5 px-4 text-right">
                       <button
                         type="button"
                         onClick={() => toggleTeacherStatus(t.id)}
-                        className="px-3 py-1 rounded-lg border border-zinc-300 hover:border-zinc-950 text-xs font-semibold text-zinc-900 transition-all cursor-pointer hover:bg-zinc-100 active:scale-95"
+                        className="px-3 py-1 rounded-lg border border-zinc-300 hover:border-zinc-950 text-xs font-semibold text-zinc-900 transition-all cursor-pointer hover:bg-zinc-100"
                       >
                         {t.status === 'present' ? 'Mark Absent' : 'Mark Present'}
                       </button>
@@ -686,12 +718,9 @@ export const DashboardOverview: React.FC = () => {
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* SECTION 3: TIME TABLE OF DIFFERENT CLASSES */}
-      {/* ======================================================== */}
+      {/* SECTION 3: TIME TABLE */}
       {activeTab === 'timetable' && (
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-2xs overflow-hidden">
-          {/* Class Switcher Bar */}
           <div className="p-5 border-b border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-base font-bold text-zinc-950">
@@ -702,7 +731,6 @@ export const DashboardOverview: React.FC = () => {
               </p>
             </div>
 
-            {/* Class Selection Buttons */}
             <div className="flex flex-wrap items-center gap-2">
               {['Grade 10-A', 'Grade 10-B', 'Grade 11-A', 'Grade 12-A'].map((cls) => (
                 <button
@@ -720,7 +748,6 @@ export const DashboardOverview: React.FC = () => {
             </div>
           </div>
 
-          {/* Timetable Schedule Grid */}
           <div className="p-5">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
               {TIMETABLE_DATA[selectedClass]?.map((slot, index) => {
@@ -759,13 +786,159 @@ export const DashboardOverview: React.FC = () => {
               })}
             </div>
           </div>
+        </div>
+      )}
 
-          <div className="p-4 border-t border-zinc-100 bg-zinc-50/50 flex items-center justify-between text-xs text-zinc-500">
-            <span>Viewing regular schedule for {selectedClass}</span>
-            <span>Monday - Friday (Full Term)</span>
+      {/* 💳 MODAL: ADD INDIVIDUAL STUDENT & FEE RECORD */}
+      {isAddStudentFeeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white p-6 rounded-2xl border border-zinc-200 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setIsAddStudentFeeOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-2.5 pb-4 border-b border-zinc-100">
+              <div className="w-9 h-9 rounded-xl bg-zinc-100 flex items-center justify-center text-zinc-950">
+                <CreditCard size={18} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-zinc-950">Add Student & Fee Record</h3>
+                <p className="text-xs text-zinc-500">Register student details and fee payment checkpoint.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateStudentFee} className="space-y-3.5 mt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-800 mb-1">Student Full Name *</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Rahul Sharma"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-950"
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-800 mb-1">Admission No</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. ADM-2026-201"
+                    value={newAdmNo}
+                    onChange={(e) => setNewAdmNo(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-950"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-800 mb-1">Class & Section *</label>
+                  <select
+                    value={newClass}
+                    onChange={(e) => setNewClass(e.target.value)}
+                    className="w-full px-2.5 py-2 text-xs rounded-lg border border-zinc-200 bg-white focus:outline-none focus:border-zinc-950"
+                  >
+                    <option value="Grade 10-A">Grade 10-A</option>
+                    <option value="Grade 10-B">Grade 10-B</option>
+                    <option value="Grade 11-A">Grade 11-A</option>
+                    <option value="Grade 12-A">Grade 12-A</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-800 mb-1">Fee Status</label>
+                  <select
+                    value={newFeeStatus}
+                    onChange={(e) => setNewFeeStatus(e.target.value as any)}
+                    className="w-full px-2.5 py-2 text-xs rounded-lg border border-zinc-200 bg-white focus:outline-none focus:border-zinc-950"
+                  >
+                    <option value="Paid">Fully Paid</option>
+                    <option value="Partial">Partially Paid</option>
+                    <option value="Pending">Pending / Overdue</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-800 mb-1">Fees Paid Till (Coverage) *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Paid till Term 2 (Nov 2026) ya Paid Full Year"
+                  value={newPaidTill}
+                  onChange={(e) => setNewPaidTill(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-950"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-800 mb-1">Due Amount</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. ₹0 ya ₹15,000"
+                    value={newDueAmount}
+                    onChange={(e) => setNewDueAmount(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-950"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-zinc-800 mb-1">Parent Phone</label>
+                  <input
+                    type="text"
+                    placeholder="+91 98765-43210"
+                    value={newParentPhone}
+                    onChange={(e) => setNewParentPhone(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-950"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-zinc-800 mb-1">Parent / Guardian Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Sunil Sharma"
+                  value={newParentName}
+                  onChange={(e) => setNewParentName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-zinc-200 focus:outline-none focus:border-zinc-950"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-zinc-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddStudentFeeOpen(false)}
+                  className="px-3 py-2 text-xs font-medium text-zinc-600 hover:text-zinc-950 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-zinc-950 text-white rounded-lg text-xs font-semibold hover:bg-zinc-800 cursor-pointer shadow-xs"
+                >
+                  Save Student & Fee
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
+
+      {/* 3-IN-1 BULK UPLOAD MODAL */}
+      <BulkUploadModal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        defaultType={bulkModalType}
+      />
     </div>
   );
 };

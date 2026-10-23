@@ -64,9 +64,17 @@ const STORAGE_KEYS = {
   SETTINGS: 'attendly_settings_v1',
 };
 
+const getTodayDateStr = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
-  const [currentDate, setCurrentDate] = useState<string>('2026-10-17');
+  const [currentDate, setCurrentDate] = useState<string>(getTodayDateStr);
   const [isMarkModalOpen, setIsMarkModalOpen] = useState(false);
   const [markModalPersonId, setMarkModalPersonId] = useState<string | null>(null);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);

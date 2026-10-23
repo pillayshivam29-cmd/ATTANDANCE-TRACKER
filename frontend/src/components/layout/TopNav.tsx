@@ -189,16 +189,6 @@ export const TopNav: React.FC<TopNavProps> = ({
                   <button
                     onClick={() => {
                       setProfileOpen(false);
-                      setActiveTab('settings');
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 transition-colors text-left cursor-pointer"
-                  >
-                    <Sliders size={14} />
-                    <span>System Settings</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setProfileOpen(false);
                       resetToMockData();
                     }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100 transition-colors text-left cursor-pointer"

@@ -13,8 +13,6 @@ import { DashboardOverview } from './components/dashboard/DashboardOverview';
 import { AttendanceManagement } from './components/attendance/AttendanceManagement';
 import { AttendanceCalendarView } from './components/calendar/AttendanceCalendarView';
 import { PeopleDirectory } from './components/people/PeopleDirectory';
-import { ReportsView } from './components/reports/ReportsView';
-import { SettingsView } from './components/settings/SettingsView';
 import { StudentPortal } from './components/portals/StudentPortal';
 import { ParentPortal } from './components/portals/ParentPortal';
 
@@ -92,8 +90,6 @@ const AppContent: React.FC = () => {
           {activeTab === 'attendance' && <AttendanceManagement />}
           {activeTab === 'calendar' && <AttendanceCalendarView />}
           {activeTab === 'people' && <PeopleDirectory />}
-          {activeTab === 'reports' && <ReportsView />}
-          {activeTab === 'settings' && <SettingsView />}
         </main>
       </div>
 
