@@ -34,6 +34,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const role = userSession?.role || 'admin';
 
+  const teachersCount = (() => {
+    try {
+      const saved = localStorage.getItem('attendly_teachers_att_v2');
+      return saved ? JSON.parse(saved).length : 6;
+    } catch {
+      return 6;
+    }
+  })();
+
   // Role-based navigation items
   const allNavItems: {
     id: NavigationTab;
@@ -44,20 +53,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }[] = [
     {
       id: 'dashboard',
-      label: role === 'student' ? 'My Overview' : role === 'parent' ? "Child's Overview" : 'Dashboard',
+      label: role === 'student' ? 'My Overview' : role === 'parent' ? "Child's Overview" : role === 'teacher' ? 'My Classroom Portal' : 'Dashboard',
       icon: <LayoutDashboard size={18} />,
       allowedRoles: ['admin', 'teacher', 'student', 'parent'],
     },
     {
-      id: 'attendance',
-      label: role === 'student' ? 'My Checkpoints' : role === 'parent' ? 'Daily Attendance' : 'Attendance',
-      icon: <CheckSquare size={18} />,
-      badge: role === 'admin' || role === 'teacher' ? `${presentCount}/${people.length}` : undefined,
-      allowedRoles: ['admin', 'teacher', 'student', 'parent'],
+      id: 'teachers',
+      label: 'Teachers & Faculty',
+      icon: <School size={18} />,
+      badge: `${teachersCount}`,
+      allowedRoles: ['admin'],
     },
     {
       id: 'calendar',
-      label: 'Monthly Calendar',
+      label: role === 'student' ? 'My Checkpoints' : role === 'parent' ? 'Daily Attendance' : 'Monthly Calendar & Attendance',
       icon: <CalendarDays size={18} />,
       allowedRoles: ['admin', 'teacher', 'student', 'parent'],
     },
@@ -66,7 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Students & Staff',
       icon: <Users size={18} />,
       badge: `${people.length}`,
-      allowedRoles: ['admin', 'teacher'],
+      allowedRoles: ['admin'],
     },
   ];
 

@@ -17,6 +17,7 @@ import {
 
 export type NavigationTab =
   | 'dashboard'
+  | 'teachers'
   | 'attendance'
   | 'calendar'
   | 'people'
@@ -130,6 +131,43 @@ export const AttendanceProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       console.warn('Failed saving people to localStorage', e);
     }
   }, [people]);
+
+  // Real-time synchronization across browser tabs and window focus
+  useEffect(() => {
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEYS.PEOPLE && e.newValue) {
+        try {
+          const freshPeople = JSON.parse(e.newValue);
+          if (Array.isArray(freshPeople)) {
+            setPeople(freshPeople);
+          }
+        } catch (err) {
+          console.warn('Failed to parse people from storage event', err);
+        }
+      }
+    };
+
+    const handleWindowFocus = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEYS.PEOPLE);
+        if (saved) {
+          const fresh = JSON.parse(saved);
+          if (Array.isArray(fresh) && fresh.length > 0) {
+            setPeople(fresh);
+          }
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    window.addEventListener('storage', handleStorageEvent);
+    window.addEventListener('focus', handleWindowFocus);
+    return () => {
+      window.removeEventListener('storage', handleStorageEvent);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, []);
 
   useEffect(() => {
     try {

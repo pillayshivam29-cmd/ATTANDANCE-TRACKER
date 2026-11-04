@@ -12,6 +12,13 @@ export interface StudentEmployee {
   status: 'active' | 'inactive';
   attendancePercentage: number;
   initials: string;
+  // School-specific attributes
+  rollNo?: string;
+  admissionNo?: string;
+  className?: string;
+  section?: string;
+  parentPhone?: string;
+  parentName?: string;
 }
 
 export interface AttendanceRecord {

@@ -55,6 +55,27 @@ export const RoleLogin: React.FC<RoleLoginProps> = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Load dynamically configured teachers from localStorage (or defaults)
+  const registeredTeachersList = React.useMemo(() => {
+    try {
+      const saved = localStorage.getItem('attendly_teachers_att_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return [
+      { name: 'Prof. Marcus Chen', email: 'marcus.chen@gmail.com', password: 'Teacher123', assignedClass: 'Grade 10-A', department: 'Science & Math', id: 'FAC-101' },
+      { name: 'Dr. Sophia Rodriguez', email: 'sophia.rodriguez@gmail.com', password: 'Teacher123', assignedClass: 'Grade 11-A', department: 'Science & Math', id: 'FAC-102' },
+      { name: 'Julian Hayes', email: 'julian.hayes@gmail.com', password: 'Teacher123', assignedClass: 'Grade 10-B', department: 'Languages', id: 'FAC-103' },
+      { name: 'Amara Okafor', email: 'amara.okafor@gmail.com', password: 'Teacher123', assignedClass: 'Grade 12-A', department: 'Science & Math', id: 'FAC-104' },
+      { name: 'Rajesh Sharma', email: 'rajesh.sharma@gmail.com', password: 'Teacher123', assignedClass: 'Grade 11-B', department: 'Technology', id: 'FAC-105' },
+      { name: 'Priya Patel', email: 'priya.patel@gmail.com', password: 'Teacher123', assignedClass: 'Grade 9-A', department: 'Humanities', id: 'FAC-106' },
+    ];
+  }, [activeModalRole]);
+
   const roles = [
     {
       id: 'admin' as UserRole,
@@ -152,7 +173,65 @@ export const RoleLogin: React.FC<RoleLoginProps> = ({ onLogin }) => {
       return;
     }
 
-    // Baaki roles ke liye (Teacher, Student, Parent)
+    // 🔒 STRICT TEACHER CHECK: GMAIL + PASSWORD CONFIGURED BY ADMIN
+    if (currentRole.id === 'teacher') {
+      let registeredTeachers: any[] = [];
+      try {
+        const saved = localStorage.getItem('attendly_teachers_att_v2');
+        if (saved) registeredTeachers = JSON.parse(saved);
+      } catch {
+        registeredTeachers = [];
+      }
+
+      // Default fallback teachers list if localStorage is empty
+      if (registeredTeachers.length === 0) {
+        registeredTeachers = [
+          { name: 'Prof. Marcus Chen', email: 'marcus.chen@gmail.com', password: 'Teacher123', assignedClass: 'Grade 10-A', department: 'Science & Math', id: 'FAC-101' },
+          { name: 'Dr. Sophia Rodriguez', email: 'sophia.rodriguez@gmail.com', password: 'Teacher123', assignedClass: 'Grade 11-A', department: 'Science & Math', id: 'FAC-102' },
+          { name: 'Julian Hayes', email: 'julian.hayes@gmail.com', password: 'Teacher123', assignedClass: 'Grade 10-B', department: 'Languages', id: 'FAC-103' },
+          { name: 'Amara Okafor', email: 'amara.okafor@gmail.com', password: 'Teacher123', assignedClass: 'Grade 12-A', department: 'Science & Math', id: 'FAC-104' },
+          { name: 'Rajesh Sharma', email: 'rajesh.sharma@gmail.com', password: 'Teacher123', assignedClass: 'Grade 11-B', department: 'Technology', id: 'FAC-105' },
+          { name: 'Priya Patel', email: 'priya.patel@gmail.com', password: 'Teacher123', assignedClass: 'Grade 9-A', department: 'Humanities', id: 'FAC-106' },
+        ];
+      }
+
+      // Check entered email against teacher's registered email
+      const matchedTeacher = registeredTeachers.find((t: any) => {
+        const tEmail = (t.email || '').trim().toLowerCase();
+        return tEmail === enteredEmail || tEmail.replace('@attendly.edu', '@gmail.com') === enteredEmail;
+      });
+
+      // 1. Agar Teacher ka Gmail registered nahi hai:
+      if (!matchedTeacher) {
+        setErrorMessage(
+          'Access Denied: This Gmail address is not registered for any teacher by the Admin. Please ask your administrator to register your Gmail.'
+        );
+        return;
+      }
+
+      // 2. Agar Password galat hai:
+      const expectedPassword = (matchedTeacher.password || 'Teacher123').trim();
+      if (expectedPassword !== enteredPassword) {
+        setErrorMessage(
+          'Incorrect password. Please enter the password configured by your school administrator.'
+        );
+        return;
+      }
+
+      // 3. Match ho gaya -> Teacher portal login successful!
+      onLogin({
+        role: 'teacher',
+        name: matchedTeacher.name || enteredEmail.split('@')[0],
+        email: matchedTeacher.email || enteredEmail,
+        departmentOrClass: matchedTeacher.assignedClass
+          ? `${matchedTeacher.department || 'Academics'} (${matchedTeacher.assignedClass})`
+          : matchedTeacher.department || 'Faculty',
+        studentId: matchedTeacher.id || 'FAC-AUTH',
+      });
+      return;
+    }
+
+    // Baaki roles ke liye (Student, Parent)
     onLogin({
       role: currentRole.id,
       name: enteredEmail ? enteredEmail.split('@')[0] : (currentRole.defaultName || 'User'),
@@ -263,18 +342,28 @@ export const RoleLogin: React.FC<RoleLoginProps> = ({ onLogin }) => {
             <form onSubmit={handleLoginSubmit} className="space-y-4 mt-5">
               <div>
                 <label className="block text-xs font-semibold text-zinc-800 mb-1">
-                  {currentRole.id === 'admin' ? 'Administrator Gmail Address' : 'Email Address'}
+                  {currentRole.id === 'admin'
+                    ? 'Administrator Gmail Address'
+                    : currentRole.id === 'teacher'
+                    ? 'Teacher Gmail (Configured by Admin)'
+                    : 'Email Address'}
                 </label>
                 <div className="relative">
                   <input
                     type="email"
-                    placeholder="Enter registered Gmail"
+                    placeholder={
+                      currentRole.id === 'admin'
+                        ? 'Enter registered admin Gmail'
+                        : currentRole.id === 'teacher'
+                        ? 'Enter teacher Gmail set by Admin'
+                        : 'Enter email address'
+                    }
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
                       setErrorMessage(null);
                     }}
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-zinc-950"
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-zinc-950 font-mono"
                     required
                     autoFocus
                   />
@@ -285,7 +374,7 @@ export const RoleLogin: React.FC<RoleLoginProps> = ({ onLogin }) => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-xs font-semibold text-zinc-800">
-                    Password
+                    {currentRole.id === 'teacher' ? 'Teacher Password (Set by Admin)' : 'Password'}
                   </label>
                   <button
                     type="button"
@@ -299,13 +388,13 @@ export const RoleLogin: React.FC<RoleLoginProps> = ({ onLogin }) => {
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter password"
+                    placeholder={currentRole.id === 'teacher' ? 'Enter password set by Admin' : 'Enter password'}
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
                       setErrorMessage(null);
                     }}
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-zinc-950"
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-zinc-200 bg-white text-zinc-900 focus:outline-none focus:border-zinc-950 font-mono"
                     required
                   />
                   <Lock size={14} className="absolute left-3 top-2.5 text-zinc-400 pointer-events-none" />
@@ -320,6 +409,44 @@ export const RoleLogin: React.FC<RoleLoginProps> = ({ onLogin }) => {
                 <span>Sign In to {currentRole.title} Dashboard</span>
               </button>
             </form>
+
+            {/* 👨‍🏫 TEACHER CREDENTIALS HELPER: Shows Admin-configured Logins */}
+            {currentRole.id === 'teacher' && (
+              <div className="mt-4 p-3 rounded-xl bg-zinc-50 border border-zinc-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-zinc-900 font-mono">
+                    Faculty Logins Configured by Admin:
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-mono">Click to autofill</span>
+                </div>
+                <div className="max-h-36 overflow-y-auto space-y-1.5 text-[11px] font-mono">
+                  {registeredTeachersList.map((t: any, idx: number) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => {
+                        setEmail(t.email || `${t.name.toLowerCase().replace(/\s+/g, '.')}@gmail.com`);
+                        setPassword(t.password || 'Teacher123');
+                        setErrorMessage(null);
+                      }}
+                      className="w-full text-left p-2 rounded-lg hover:bg-zinc-100 border border-zinc-200/70 bg-white transition-colors flex items-center justify-between cursor-pointer group"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <span className="font-bold text-zinc-950 font-sans block group-hover:underline">
+                          {t.name}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 truncate block">
+                          {t.email} • {t.assignedClass}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-zinc-700 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200 shrink-0">
+                        Pass: {t.password || 'Teacher123'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 pt-3 border-t border-zinc-100 text-center">
               <button

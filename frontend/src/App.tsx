@@ -10,11 +10,14 @@ import { RoleLogin, UserSession } from './components/auth/RoleLogin';
 
 // Portals & Views
 import { DashboardOverview } from './components/dashboard/DashboardOverview';
+import { TeachersManagement } from './components/teachers/TeachersManagement';
 import { AttendanceManagement } from './components/attendance/AttendanceManagement';
 import { AttendanceCalendarView } from './components/calendar/AttendanceCalendarView';
 import { PeopleDirectory } from './components/people/PeopleDirectory';
 import { StudentPortal } from './components/portals/StudentPortal';
 import { ParentPortal } from './components/portals/ParentPortal';
+import { TeacherPortal } from './components/portals/TeacherPortal';
+
 
 const AppContent: React.FC = () => {
   const { activeTab, setActiveTab } = useAttendance();
@@ -65,6 +68,18 @@ const AppContent: React.FC = () => {
       );
     }
 
+    // 👨‍🏫 TEACHER LOGIN PAR NAYA DEDICATED TEACHER PORTAL RENDER HOGA:
+    if (currentUser.role === 'teacher') {
+      return (
+        <TeacherPortal
+          teacherName={currentUser.name}
+          teacherEmail={currentUser.email}
+          teacherId={currentUser.studentId || 'FAC-101'}
+        />
+      );
+    }
+
+    // Admin login par admin dashboard dikhega:
     return <DashboardOverview />;
   };
 
@@ -85,10 +100,11 @@ const AppContent: React.FC = () => {
           onOpenBulkModal={() => setBulkModalOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className={`flex-1 p-4 sm:p-6 lg:p-8 w-full ${activeTab === 'teachers' || activeTab === 'calendar' || activeTab === 'attendance' || activeTab === 'people' ? 'max-w-none' : 'max-w-7xl mx-auto'}`}>
           {activeTab === 'dashboard' && renderDashboardView()}
-          {activeTab === 'attendance' && <AttendanceManagement />}
-          {activeTab === 'calendar' && <AttendanceCalendarView />}
+          {activeTab === 'teachers' && <TeachersManagement />}
+          {activeTab === 'attendance' && <AttendanceCalendarView userSession={currentUser} />}
+          {activeTab === 'calendar' && <AttendanceCalendarView userSession={currentUser} />}
           {activeTab === 'people' && <PeopleDirectory />}
         </main>
       </div>

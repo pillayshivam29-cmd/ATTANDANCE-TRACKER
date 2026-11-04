@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { useAttendance } from '../../context/AttendanceContext';
-import { FileSpreadsheet, Download, Upload, FileText, CheckCircle2, School, GraduationCap, CreditCard } from 'lucide-react';
+import { FileSpreadsheet, Download, Upload, FileText, CheckCircle2, School, GraduationCap, CreditCard, Phone, Hash } from 'lucide-react';
 
 interface BulkUploadModalProps {
   isOpen: boolean;
@@ -29,20 +29,22 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     let filename = '';
 
     if (uploadType === 'students') {
+      // 🎓 STUDENTS CSV TEMPLATE: Name, Roll Number, Admission Number, Class, Section, Parents Phone Number
       csvContent =
-        'Name,Student ID,Email,Class/Department,Phone\n' +
-        'Rahul Sharma,STU-201,rahul.sharma@school.edu,Grade 10-A,+91 9876543210\n' +
-        'Priya Verma,STU-202,priya.verma@school.edu,Grade 10-A,+91 9876543211\n' +
-        'Aman Gupta,STU-203,aman.gupta@school.edu,Grade 10-B,+91 9876543212\n' +
-        'Ananya Patel,STU-204,ananya.patel@school.edu,Grade 10-B,+91 9876543213\n';
+        'Roll No,Student Name,Admission No,Class,Section,Parents Phone Number\n' +
+        '01,Rahul Sharma,19554,Grade 10,A,+91 9876543210\n' +
+        '02,Priya Verma,19555,Grade 10,A,+91 9876543211\n' +
+        '03,Aman Gupta,19556,Grade 10,B,+91 9876543212\n' +
+        '04,Ananya Patel,19557,Grade 11,A,+91 9876543213\n' +
+        '05,Kunal Raj Singh,19558,Grade 10,A,+91 9876543214\n';
       filename = 'attendly_students_template.csv';
     } else if (uploadType === 'teachers') {
       csvContent =
-        'Faculty ID,Teacher Name,Subject,Department,Assigned Class,Phone\n' +
-        'FAC-201,Dr. Rajesh Sharma,Mathematics & Calculus,Science & Math,Grade 10-A,+91 9876543220\n' +
-        'FAC-202,Prof. Kavita Rao,Physics & Mechanics,Science & Math,Grade 11-A,+91 9876543221\n' +
-        'FAC-203,Deepak Mehta,English Literature,Languages,Grade 10-B,+91 9876543222\n' +
-        'FAC-204,Sunita Verma,Chemistry Theory & Lab,Science & Math,Grade 12-A,+91 9876543223\n';
+        'Faculty ID,Teacher Name,Subject,Department,Assigned Class,Phone,Teacher Gmail,Login Password\n' +
+        'FAC-201,Dr. Rajesh Sharma,Mathematics & Calculus,Science & Math,Grade 10-A,+91 9876543220,rajesh.sharma@gmail.com,Teacher123\n' +
+        'FAC-202,Prof. Kavita Rao,Physics & Mechanics,Science & Math,Grade 11-A,+91 9876543221,kavita.rao@gmail.com,Teacher123\n' +
+        'FAC-203,Deepak Mehta,English Literature,Languages,Grade 10-B,+91 9876543222,deepak.mehta@gmail.com,Teacher123\n' +
+        'FAC-204,Sunita Verma,Chemistry Theory & Lab,Science & Math,Grade 12-A,+91 9876543223,sunita.verma@gmail.com,Teacher123\n';
       filename = 'attendly_teachers_template.csv';
     } else {
       // 💳 FEES & REGISTRY TEMPLATE
@@ -77,23 +79,85 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
       const lines = text.split(/\r?\n/).filter(Boolean);
       const parsed: any[] = [];
 
-      for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(',').map((item) => item.trim().replace(/^"|"$/g, ''));
-        if (row[0]) {
-          if (uploadType === 'teachers') {
+      if (lines.length <= 1) {
+        setPreviewData([]);
+        return;
+      }
+
+      if (uploadType === 'students') {
+        // 🎓 PARSE STUDENTS: Roll No, Name, Admission No, Class, Section, Parents Phone
+        const header = lines[0].toLowerCase().split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
+        const rollIdx = header.findIndex((h) => h.includes('roll'));
+        const nameIdx = header.findIndex((h) => h.includes('name') || h.includes('student'));
+        const admIdx = header.findIndex((h) => h.includes('admission') || h.includes('adm') || h.includes('id'));
+        const classIdx = header.findIndex((h) => h.includes('class') || h.includes('grade'));
+        const secIdx = header.findIndex((h) => h.includes('section') || h.includes('sec'));
+        const phoneIdx = header.findIndex((h) => h.includes('phone') || h.includes('parent') || h.includes('contact') || h.includes('mobile'));
+
+        const rIdx = rollIdx >= 0 ? rollIdx : 0;
+        const nIdx = nameIdx >= 0 ? nameIdx : 1;
+        const aIdx = admIdx >= 0 ? admIdx : 2;
+        const cIdx = classIdx >= 0 ? classIdx : 3;
+        const sIdx = secIdx >= 0 ? secIdx : 4;
+        const pIdx = phoneIdx >= 0 ? phoneIdx : 5;
+
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(',').map((item) => item.trim().replace(/^"|"$/g, ''));
+          if (row.length > 1 || (row[0] && row[0] !== '')) {
+            const roll = row[rIdx] || String(i).padStart(2, '0');
+            const name = row[nIdx] || `Student ${i}`;
+            const adm = row[aIdx] || `1955${i}`;
+            const cls = row[cIdx] || 'Grade 10';
+            const sec = row[sIdx] || 'A';
+            const parentPhone = row[pIdx] || '+91 98765-00000';
+            const fullClass = cls.includes('-') ? cls : `${cls}-${sec}`;
+
+            parsed.push({
+              rollNo: roll,
+              name: name,
+              admissionNo: adm,
+              employeeId: adm,
+              className: cls,
+              section: sec,
+              department: fullClass,
+              phone: parentPhone,
+              parentPhone: parentPhone,
+              email: `${name.toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
+              role: 'Student',
+              joinDate: new Date().toISOString().split('T')[0],
+              status: 'active',
+              attendancePercentage: 100,
+            });
+          }
+        }
+      } else if (uploadType === 'teachers') {
+        // 👨‍🏫 PARSE TEACHERS (With Gmail & Login Password)
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(',').map((item) => item.trim().replace(/^"|"$/g, ''));
+          if (row[0]) {
+            const tName = row[1] || row[0];
+            const tEmail = row[6] || `${tName.toLowerCase().replace(/\s+/g, '.')}@gmail.com`;
+            const tPass = row[7] || 'Teacher123';
             parsed.push({
               id: row[0] || `FAC-${200 + i}`,
-              name: row[1] || row[0],
+              name: tName,
               subject: row[2] || 'General Subject',
               department: row[3] || 'Science & Math',
               assignedClass: row[4] || 'Grade 10-A',
               phone: row[5] || '+91 98000-00000',
+              email: tEmail,
+              password: tPass,
               checkIn: '08:30 AM',
               checkOut: '03:30 PM',
               status: 'present',
             });
-          } else if (uploadType === 'fees') {
-            // Fee Record Format
+          }
+        }
+      } else {
+        // 💳 PARSE FEES
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split(',').map((item) => item.trim().replace(/^"|"$/g, ''));
+          if (row[0]) {
             parsed.push({
               id: `S-${Date.now()}-${i}`,
               admissionNo: row[0] || `ADM-2026-${200 + i}`,
@@ -106,16 +170,6 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
               totalFee: '₹60,000',
               dueAmount: row[7] || '₹0',
               attendanceRate: 95,
-            });
-          } else {
-            // Standard Student Format
-            parsed.push({
-              name: row[0],
-              employeeId: row[1] || `ADM-2026-${100 + i}`,
-              email: row[2] || `${row[0].toLowerCase().replace(/\s+/g, '.')}@school.edu`,
-              department: row[3] || 'Grade 10-A',
-              phone: row[4] || '+91 98000-00000',
-              role: 'Student',
             });
           }
         }
@@ -130,7 +184,85 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     setIsUploading(true);
 
     try {
-      if (uploadType === 'teachers') {
+      if (uploadType === 'students') {
+        // 🎓 SAVE STUDENTS: 4-Way Real Time Sync
+        // 1. Sync to attendly_people_v1 (Admin Students Registry)
+        const existingPeople = JSON.parse(localStorage.getItem('attendly_people_v1') || '[]');
+        const formattedNewPeople = previewData.map((item, idx) => {
+          const nameParts = (item.name || 'Student').trim().split(' ');
+          const initials =
+            nameParts.length > 1
+              ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+              : (item.name || 'ST').slice(0, 2).toUpperCase();
+
+          return {
+            id: `emp-${Date.now()}-${idx}`,
+            initials,
+            ...item,
+          };
+        });
+        localStorage.setItem('attendly_people_v1', JSON.stringify([...formattedNewPeople, ...existingPeople]));
+
+        // 2. Sync to attendly_students_att_v2 (Daily Roll Call)
+        const attendanceItems = previewData.map((item, idx) => ({
+          id: `STU-${Date.now()}-${idx}`,
+          admissionNo: item.admissionNo,
+          rollNo: item.rollNo,
+          name: item.name,
+          gradeClass: item.department,
+          parentName: 'Parent / Guardian',
+          parentPhone: item.parentPhone,
+          checkIn: '08:15 AM',
+          status: 'present' as const,
+        }));
+        const existingAttendance = JSON.parse(localStorage.getItem('attendly_students_att_v2') || '[]');
+        localStorage.setItem('attendly_students_att_v2', JSON.stringify([...existingAttendance, ...attendanceItems]));
+
+        // 3. Sync to attendly_students_v1 (Admin Dashboard Fees)
+        const feeItems = previewData.map((item, idx) => ({
+          id: `S-${Date.now()}-${idx}`,
+          admissionNo: item.admissionNo,
+          rollNo: item.rollNo,
+          name: item.name,
+          gradeClass: item.department,
+          parentName: 'Parent / Guardian',
+          parentPhone: item.parentPhone,
+          feeStatus: 'Paid' as const,
+          feePaidTill: 'Paid Full Year (2026-27)',
+          totalFee: '₹60,000',
+          dueAmount: '₹0',
+          attendanceRate: 100,
+        }));
+        const existingFees = JSON.parse(localStorage.getItem('attendly_students_v1') || '[]');
+        localStorage.setItem('attendly_students_v1', JSON.stringify([...existingFees, ...feeItems]));
+
+        // 4. Sync to attendly_att_by_date_v3 (Calendar)
+        try {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const calendarMap = JSON.parse(localStorage.getItem('attendly_att_by_date_v3') || '{}');
+          const todayTeachers = JSON.parse(localStorage.getItem('attendly_teachers_att_v2') || 'null') || [];
+          if (!calendarMap[todayStr]) {
+            calendarMap[todayStr] = {
+              teachers: todayTeachers,
+              students: attendanceItems,
+            };
+          } else {
+            calendarMap[todayStr].students = [...(calendarMap[todayStr].students || []), ...attendanceItems];
+            if (!Array.isArray(calendarMap[todayStr].teachers)) {
+              calendarMap[todayStr].teachers = todayTeachers;
+            }
+          }
+          localStorage.setItem('attendly_att_by_date_v3', JSON.stringify(calendarMap));
+        } catch (e) {
+          console.warn(e);
+        }
+
+        addToast(
+          'Students Uploaded! 🎓',
+          `${previewData.length} students enrolled with Roll No, Admission No, and Class details!`,
+          'success'
+        );
+      } else if (uploadType === 'teachers') {
         // 👨‍🏫 SAVE TEACHERS
         const existingTeachers = JSON.parse(localStorage.getItem('attendly_teachers_att_v2') || '[]');
         const updatedTeachers = [...existingTeachers, ...previewData];
@@ -141,53 +273,15 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
           `${previewData.length} faculty members added to Teachers Attendance roster!`,
           'success'
         );
-      } else if (uploadType === 'fees') {
-        // 💳 SAVE STUDENTS & FEE RECORDS (Dashboard table + Attendance)
+      } else {
+        // 💳 SAVE FEES
         const existingFeeStudents = JSON.parse(localStorage.getItem('attendly_students_v1') || '[]');
         const updatedFeeStudents = [...existingFeeStudents, ...previewData];
         localStorage.setItem('attendly_students_v1', JSON.stringify(updatedFeeStudents));
 
-        // Also add to daily attendance roster
-        const attendanceItems = previewData.map((s, idx) => ({
-          id: `STU-${Date.now()}-${idx}`,
-          admissionNo: s.admissionNo,
-          name: s.name,
-          gradeClass: s.gradeClass,
-          parentName: s.parentName,
-          parentPhone: s.parentPhone,
-          checkIn: '08:15 AM',
-          status: 'present' as const,
-        }));
-        const existingAtt = JSON.parse(localStorage.getItem('attendly_students_att_v2') || '[]');
-        localStorage.setItem('attendly_students_att_v2', JSON.stringify([...existingAtt, ...attendanceItems]));
-
         addToast(
           'Fees & Students Uploaded! 💳',
           `${previewData.length} student fee records added directly into Dashboard!`,
-          'success'
-        );
-      } else {
-        // 🎓 SAVE STUDENTS
-        const newAttendanceStudents = previewData.map((item, idx) => ({
-          id: `STU-${Date.now()}-${idx}`,
-          admissionNo: item.employeeId || `ADM-2026-${100 + idx}`,
-          name: item.name,
-          gradeClass: item.department || 'Grade 10-A',
-          parentName: 'Parent / Guardian',
-          parentPhone: item.phone || '+91 98000-00000',
-          checkIn: '08:15 AM',
-          status: 'present' as const,
-        }));
-
-        const existingAttendance = JSON.parse(localStorage.getItem('attendly_students_att_v2') || '[]');
-        localStorage.setItem('attendly_students_att_v2', JSON.stringify([...existingAttendance, ...newAttendanceStudents]));
-
-        const existingPeople = JSON.parse(localStorage.getItem('attendly_people_v1') || '[]');
-        localStorage.setItem('attendly_people_v1', JSON.stringify([...existingPeople, ...previewData]));
-
-        addToast(
-          'Students Uploaded! 🎓',
-          `${previewData.length} students registered in student registry!`,
           'success'
         );
       }
@@ -196,7 +290,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
 
       setTimeout(() => {
         window.location.reload();
-      }, 600);
+      }, 500);
     } catch (err: any) {
       addToast('Upload Error', 'Could not process CSV data. Please check file format.', 'error');
     } finally {
@@ -279,10 +373,10 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                 {uploadType === 'teachers' && 'Download Faculty Teachers CSV Template'}
                 {uploadType === 'fees' && 'Download Students & Fees CSV Template'}
               </h4>
-              <p className="text-[11px] text-zinc-500">
-                {uploadType === 'students' && 'Format: Name, Student ID, Email, Class/Department, Phone'}
-                {uploadType === 'teachers' && 'Format: Faculty ID, Teacher Name, Subject, Department, Assigned Class, Phone'}
-                {uploadType === 'fees' && 'Format: Admission No, Student Name, Class, Parent Name, Parent Phone, Fee Status, Fees Paid Till, Due Amount'}
+              <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                {uploadType === 'students' && 'Columns: Roll No, Student Name, Admission No, Class, Section, Parents Phone Number'}
+                {uploadType === 'teachers' && 'Columns: Faculty ID, Teacher Name, Subject, Department, Assigned Class, Phone'}
+                {uploadType === 'fees' && 'Columns: Admission No, Student Name, Class, Parent Name, Parent Phone, Fee Status, Fees Paid Till, Due Amount'}
               </p>
             </div>
           </div>
@@ -311,7 +405,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
           />
         </div>
 
-        {/* Preview */}
+        {/* Step 3: Data Preview */}
         {previewData.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
@@ -320,24 +414,57 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
               </span>
             </div>
 
-            <div className="max-h-40 overflow-y-auto border border-zinc-200 rounded-lg divide-y divide-zinc-100 text-xs">
-              {previewData.slice(0, 8).map((item, idx) => (
-                <div key={idx} className="p-2 flex items-center justify-between hover:bg-zinc-50">
-                  <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded bg-zinc-900 text-white font-mono text-[9px] flex items-center justify-center font-bold">
-                      {item.name ? item.name[0] : (item.admissionNo ? item.admissionNo[0] : '#')}
-                    </span>
-                    <span className="font-semibold text-zinc-900">{item.name || item.admissionNo}</span>
-                    <span className="text-zinc-400 text-[11px]">
-                      ({item.gradeClass || item.assignedClass || item.department})
+            {uploadType === 'students' ? (
+              /* 🎓 SPECIFIC STUDENTS PREVIEW TABLE: Roll No, Name, Admission No, Class, Section, Parents Phone */
+              <div className="max-h-48 overflow-y-auto border border-zinc-200 rounded-xl overflow-hidden">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-zinc-100 text-zinc-700 font-mono text-[10px] uppercase sticky top-0 border-b border-zinc-200">
+                    <tr>
+                      <th className="py-2 px-3">Roll No</th>
+                      <th className="py-2 px-3">Student Name</th>
+                      <th className="py-2 px-3">Admission No</th>
+                      <th className="py-2 px-3">Class & Section</th>
+                      <th className="py-2 px-3">Parents Phone</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 font-medium">
+                    {previewData.slice(0, 10).map((s, idx) => (
+                      <tr key={idx} className="hover:bg-zinc-50 font-mono text-[11px]">
+                        <td className="py-2 px-3 font-bold text-zinc-950">#{s.rollNo}</td>
+                        <td className="py-2 px-3 font-semibold text-zinc-900 font-sans">{s.name}</td>
+                        <td className="py-2 px-3 text-zinc-600">{s.admissionNo}</td>
+                        <td className="py-2 px-3">
+                          <span className="px-1.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-800 text-[10px]">
+                            {s.className} - Sec {s.section}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-zinc-600">{s.parentPhone}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* Teachers & Fees Preview */
+              <div className="max-h-40 overflow-y-auto border border-zinc-200 rounded-lg divide-y divide-zinc-100 text-xs">
+                {previewData.slice(0, 8).map((item, idx) => (
+                  <div key={idx} className="p-2 flex items-center justify-between hover:bg-zinc-50">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded bg-zinc-900 text-white font-mono text-[9px] flex items-center justify-center font-bold">
+                        {item.name ? item.name[0] : (item.admissionNo ? item.admissionNo[0] : '#')}
+                      </span>
+                      <span className="font-semibold text-zinc-900">{item.name || item.admissionNo}</span>
+                      <span className="text-zinc-400 text-[11px]">
+                        ({item.gradeClass || item.assignedClass || item.department})
+                      </span>
+                    </div>
+                    <span className="font-mono text-zinc-500 text-[11px]">
+                      {item.feeStatus ? `${item.feeStatus} • ${item.feePaidTill}` : (item.employeeId || item.id)}
                     </span>
                   </div>
-                  <span className="font-mono text-zinc-500 text-[11px]">
-                    {item.feeStatus ? `${item.feeStatus} • ${item.feePaidTill}` : (item.employeeId || item.id)}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

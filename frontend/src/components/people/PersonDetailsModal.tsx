@@ -38,12 +38,25 @@ export const PersonDetailsModal: React.FC<PersonDetailsModalProps> = ({
   const absentCount = records.filter((r) => r.status === 'absent').length;
   const halfDayCount = records.filter((r) => r.status === 'half-day').length;
 
+  const isStudent =
+    !person.role?.toLowerCase().includes('faculty') &&
+    !person.role?.toLowerCase().includes('teacher') &&
+    !person.employeeId.startsWith('FAC-');
+
+  const rollDisplay = person.rollNo || '01';
+  const admDisplay = person.admissionNo || person.employeeId;
+  const classSecDisplay =
+    person.className && person.section
+      ? `${person.className} - Section ${person.section}`
+      : person.department;
+  const parentContact = person.parentPhone || person.phone || 'Not provided';
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Member Profile & Attendance"
-      description={`System Record ID: ${person.id}`}
+      title={isStudent ? 'Student Profile & Academic Attendance' : 'Faculty Profile & Attendance'}
+      description={isStudent ? `Student Admission ID: ${admDisplay}` : `Faculty ID: ${person.employeeId}`}
       maxWidth="lg"
     >
       <div className="space-y-4">
@@ -59,7 +72,11 @@ export const PersonDetailsModal: React.FC<PersonDetailsModalProps> = ({
                 <Badge status={person.status} size="sm" />
               </div>
               <p className="text-xs text-zinc-500 font-mono mt-0.5">
-                {person.employeeId} • {person.role} ({person.department})
+                {isStudent ? (
+                  <>Roll #{rollDisplay} • Adm: {admDisplay} • {classSecDisplay}</>
+                ) : (
+                  <>{person.employeeId} • {person.role} ({person.department})</>
+                )}
               </p>
             </div>
           </div>
@@ -72,31 +89,67 @@ export const PersonDetailsModal: React.FC<PersonDetailsModalProps> = ({
         </div>
 
         {/* Contact & Meta Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
-          <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
-            <span className="text-zinc-400 flex items-center gap-1.5 mb-1">
-              <Mail size={12} /> Email
-            </span>
-            <span className="text-zinc-800 font-medium truncate block">{person.email}</span>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+          {isStudent ? (
+            <>
+              <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
+                <span className="text-zinc-400 flex items-center gap-1.5 mb-1 font-mono text-[10px] uppercase">
+                  Roll Number
+                </span>
+                <span className="text-zinc-900 font-bold font-mono text-sm block">#{rollDisplay}</span>
+              </div>
 
-          <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
-            <span className="text-zinc-400 flex items-center gap-1.5 mb-1">
-              <Phone size={12} /> Phone
-            </span>
-            <span className="text-zinc-800 font-medium truncate block">
-              {person.phone || 'Not provided'}
-            </span>
-          </div>
+              <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
+                <span className="text-zinc-400 flex items-center gap-1.5 mb-1 font-mono text-[10px] uppercase">
+                  Admission No
+                </span>
+                <span className="text-zinc-900 font-bold font-mono text-xs block">{admDisplay}</span>
+              </div>
 
-          <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
-            <span className="text-zinc-400 flex items-center gap-1.5 mb-1">
-              <Calendar size={12} /> Enrolled
-            </span>
-            <span className="text-zinc-800 font-mono font-medium block">
-              {person.joinDate}
-            </span>
-          </div>
+              <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
+                <span className="text-zinc-400 flex items-center gap-1.5 mb-1 font-mono text-[10px] uppercase">
+                  Class & Section
+                </span>
+                <span className="text-zinc-900 font-bold text-xs block truncate">{classSecDisplay}</span>
+              </div>
+
+              <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
+                <span className="text-zinc-400 flex items-center gap-1.5 mb-1 font-mono text-[10px] uppercase">
+                  <Phone size={11} /> Parents Phone
+                </span>
+                <span className="text-zinc-900 font-bold font-mono text-xs block truncate">
+                  {parentContact}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
+                <span className="text-zinc-400 flex items-center gap-1.5 mb-1">
+                  <Mail size={12} /> Email
+                </span>
+                <span className="text-zinc-800 font-medium truncate block">{person.email}</span>
+              </div>
+
+              <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
+                <span className="text-zinc-400 flex items-center gap-1.5 mb-1">
+                  <Phone size={12} /> Phone
+                </span>
+                <span className="text-zinc-800 font-medium truncate block">
+                  {person.phone || 'Not provided'}
+                </span>
+              </div>
+
+              <div className="p-2.5 bg-white border border-zinc-200 rounded-lg">
+                <span className="text-zinc-400 flex items-center gap-1.5 mb-1">
+                  <Calendar size={12} /> Enrolled
+                </span>
+                <span className="text-zinc-800 font-mono font-medium block">
+                  {person.joinDate}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Summary Stats */}
