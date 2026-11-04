@@ -8,7 +8,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/attendly';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://pillayshivam29_db_user:shivam9999@project1.6nsgnwa.mongodb.net/attendly?retryWrites=true&w=majority';
 
 // Middleware
 app.use(cors());
