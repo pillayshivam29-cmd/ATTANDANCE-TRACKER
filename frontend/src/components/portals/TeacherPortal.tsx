@@ -42,7 +42,7 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
   teacherEmail = 'marcus.chen@gmail.com',
   teacherId = 'FAC-101',
 }) => {
-  const { addPerson, addToast, people } = useAttendance();
+  const { addPerson, addToast, people, setActiveTab: setGlobalTab } = useAttendance();
 
   // 1. Fetch Logged-in Teacher Data
   const [teachers] = useState<any[]>(() => {
@@ -248,9 +248,28 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         };
       });
 
+      // 2. COMMIT TO MONTHLY CALENDAR DATABASE (attendly_att_by_date_v3)
+      const existingDay = calendarMap[todayIsoStr] || {};
+      const existingTeachers = (Array.isArray(existingDay.teachers) && existingDay.teachers.length > 0)
+        ? existingDay.teachers
+        : JSON.parse(localStorage.getItem('attendly_teachers_att_v2') || 'null') || [
+            { id: 'FAC-101', name: 'Prof. Marcus Chen', subject: 'Mathematics', department: 'Science & Math', assignedClass: 'Grade 10-A', phone: '+91 98765-43210', checkIn: '08:15 AM', status: 'present' },
+            { id: 'FAC-102', name: 'Dr. Sophia Rodriguez', subject: 'Physics & Lab', department: 'Science & Math', assignedClass: 'Grade 11-A', phone: '+91 98765-43211', checkIn: '08:20 AM', status: 'present' },
+            { id: 'FAC-103', name: 'Julian Hayes', subject: 'English Literature', department: 'Languages', assignedClass: 'Grade 10-B', phone: '+91 98765-43212', checkIn: '08:45 AM', status: 'late' },
+            { id: 'FAC-104', name: 'Amara Okafor', subject: 'Chemistry', department: 'Science & Math', assignedClass: 'Grade 12-A', phone: '+91 98765-43213', checkIn: '--', status: 'absent' },
+            { id: 'FAC-105', name: 'Rajesh Sharma', subject: 'Computer Science', department: 'Technology', assignedClass: 'Grade 11-B', phone: '+91 98765-43214', checkIn: '08:05 AM', status: 'present' },
+            { id: 'FAC-106', name: 'Priya Patel', subject: 'Social Studies', department: 'Humanities', assignedClass: 'Grade 9-A', phone: '+91 98765-43215', checkIn: '08:25 AM', status: 'present' },
+          ];
+
+      const existingStudents = Array.isArray(existingDay.students) ? existingDay.students : [];
+      const otherClassStudents = existingStudents.filter(
+        (s: any) => (s.gradeClass || s.department) !== currentTeacher.assignedClass
+      );
+
       calendarMap[todayIsoStr] = {
         date: todayIsoStr,
-        students: updatedClassStudents,
+        teachers: existingTeachers,
+        students: [...otherClassStudents, ...updatedClassStudents],
         finalizedAt: timeNow,
         submittedBy: currentTeacher.name,
       };
@@ -542,6 +561,16 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* View Monthly Calendar */}
+          <button
+            type="button"
+            onClick={() => setGlobalTab('calendar')}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-zinc-200 hover:bg-zinc-100 text-zinc-900 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+          >
+            <Calendar size={14} />
+            <span>Monthly Calendar</span>
+          </button>
+
           {/* Quick Mark All Present */}
           <button
             type="button"
@@ -740,6 +769,17 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({
           <span>Class Students Roster</span>
           <span className={`text-[10px] px-1.5 py-0.2 rounded font-mono ${activeTab === 'roster' ? 'bg-zinc-800 text-zinc-200' : 'bg-zinc-200 text-zinc-700'}`}>
             {myClassStudents.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setGlobalTab('calendar')}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-zinc-600 hover:text-zinc-950 hover:bg-white/80 transition-all cursor-pointer"
+        >
+          <Calendar size={16} />
+          <span>Class Monthly Calendar</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+            Live View
           </span>
         </button>
       </div>

@@ -2,11 +2,13 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "Attendly MongoDB Backend",
-  "main": "src/server.ts",
+  "type": "module",
+  "main": "Server.js",
   "scripts": {
-    "dev": "ts-node src/server.ts",
+    "dev": "node Server.js",
+    "serve": "node Server.js",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node Server.js"
   },
   "dependencies": {
     "@prisma/client": "^7.10.1",
